@@ -1,5 +1,5 @@
 /*!
-*  ui-leaflet 1.0.0 2016-07-18
+*  ui-leaflet 1.0.0 2016-08-18
 *  ui-leaflet - An AngularJS directive to easily interact with Leaflet maps
 *  git: https://github.com/angular-ui/ui-leaflet
 */
@@ -502,6 +502,10 @@ angular.module('ui-leaflet').factory('leafletControlHelpers', function ($rootSco
                 map.addControl(_layersControl);
             }
             return mustBeLoaded;
+        },
+
+        destroyMapLayersControl: function destroyMapLayersControl(mapId) {
+            delete _controls[mapId];
         }
     };
 });
@@ -1385,7 +1389,7 @@ angular.module('ui-leaflet').service('leafletIterators', function (leafletLogger
   // `key:value` pairs.
   var _matcher,
       _matches = null;
-  _matcher = _matches = function (attrs) {
+  _matcher = _matches = function _matches(attrs) {
     attrs = _extendOwn({}, attrs);
     return function (obj) {
       return _isMatch(obj, attrs);
@@ -1404,7 +1408,7 @@ angular.module('ui-leaflet').service('leafletIterators', function (leafletLogger
 
   var _every,
       _all = null;
-  _every = _all = function (obj, predicate, context) {
+  _every = _all = function _all(obj, predicate, context) {
     predicate = cb(predicate, context);
     var keys = !_isArrayLike(obj) && _keys(obj),
         length = (keys || obj).length;
@@ -2137,7 +2141,8 @@ angular.module('ui-leaflet').factory('leafletMapDefaults', function ($q, leaflet
                 attributionControl: d.attributionControl,
                 worldCopyJump: d.worldCopyJump,
                 crs: d.crs,
-                trackResize: d.trackResize
+                trackResize: d.trackResize,
+                editable: true
             };
 
             if (isDefined(d.minZoom)) {
@@ -2181,6 +2186,7 @@ angular.module('ui-leaflet').factory('leafletMapDefaults', function ($q, leaflet
                 newDefaults.keyboard = isDefined(userDefaults.keyboard) ? userDefaults.keyboard : newDefaults.keyboard;
                 newDefaults.dragging = isDefined(userDefaults.dragging) ? userDefaults.dragging : newDefaults.dragging;
                 newDefaults.trackResize = isDefined(userDefaults.trackResize) ? userDefaults.trackResize : newDefaults.trackResize;
+                newDefaults.editable = isDefined(userDefaults.editable) ? userDefaults.editable : false;
 
                 if (isDefined(userDefaults.controls)) {
                     angular.extend(newDefaults.controls, userDefaults.controls);
@@ -3475,6 +3481,10 @@ angular.module('ui-leaflet').directive('controls', function (leafletLogger, leaf
             var leafletControls = {};
             var errorHeader = leafletHelpers.errorHeader + ' [Controls] ';
 
+            scope.$on('$destroy', function () {
+                leafletControlHelpers.destroyMapLayersControl(scope.mapId);
+            });
+
             controller.getMap().then(function (map) {
 
                 leafletScope.$watchCollection('controls', function (newControls) {
@@ -3683,7 +3693,7 @@ angular.module('ui-leaflet').directive('geojson', function ($timeout, leafletLog
                     if (angular.isFunction(geojson.onEachFeature)) {
                         onEachFeature = geojson.onEachFeature;
                     } else {
-                        onEachFeature = function (feature, layer) {
+                        onEachFeature = function onEachFeature(feature, layer) {
                             if (leafletHelpers.LabelPlugin.isLoaded() && isDefined(feature.properties.description)) {
                                 layer.bindLabel(feature.properties.description);
                             }
@@ -4020,6 +4030,10 @@ angular.module('ui-leaflet').directive('layers', function (leafletLogger, $q, le
                 changeOpacityListener = leafletLayerHelpers.changeOpacityListener,
                 updateLayersControl = leafletControlHelpers.updateLayersControl,
                 isLayersControlVisible = false;
+
+            scope.$on('$destroy', function () {
+                leafletControlHelpers.destroyMapLayersControl(scope.mapId);
+            });
 
             controller.getMap().then(function (map) {
 
@@ -4464,12 +4478,12 @@ angular.module('ui-leaflet').directive('markers', function (leafletLogger, $root
                         var pass = _maybeAddMarkerToLayer(layerName, layers, model, marker, watchOptions.individual.type, map);
                         if (!pass) return; //something went wrong move on in the loop
                     } else if (!isDefined(model.group)) {
-                            // We do not have a layer attr, so the marker goes to the map layer
-                            map.addLayer(marker);
-                            if (watchOptions.individual.type === null && model.focus === true) {
-                                marker.openPopup();
-                            }
+                        // We do not have a layer attr, so the marker goes to the map layer
+                        map.addLayer(marker);
+                        if (watchOptions.individual.type === null && model.focus === true) {
+                            marker.openPopup();
                         }
+                    }
 
                     if (watchOptions.individual.type !== null) {
                         addMarkerWatcher(marker, pathToMarker, leafletScope, layers, map, watchOptions.individual);
@@ -4544,7 +4558,7 @@ angular.module('ui-leaflet').directive('markers', function (leafletLogger, $root
                 if (isDefined(controller[1])) {
                     getLayers = controller[1].getLayers;
                 } else {
-                    getLayers = function () {
+                    getLayers = function getLayers() {
                         var deferred = $q.defer();
                         deferred.resolve();
                         return deferred.promise;
@@ -4671,7 +4685,7 @@ angular.module('ui-leaflet').directive('paths', function (leafletLogger, $q, lea
                 if (isDefined(controller[1])) {
                     getLayers = controller[1].getLayers;
                 } else {
-                    getLayers = function () {
+                    getLayers = function getLayers() {
                         var deferred = $q.defer();
                         deferred.resolve();
                         return deferred.promise;
@@ -5270,7 +5284,7 @@ angular.module('ui-leaflet').factory('leafletMarkerEvents', function ($rootScope
 
 'use strict';
 
-function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 
 angular.module('ui-leaflet').factory('leafletPathEvents', function ($rootScope, $q, leafletLogger, leafletHelpers, leafletLabelEvents, leafletEventsHelpers) {
     var isDefined = leafletHelpers.isDefined,

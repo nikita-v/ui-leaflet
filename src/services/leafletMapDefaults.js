@@ -72,7 +72,8 @@ angular.module('ui-leaflet').factory('leafletMapDefaults', function ($q, leaflet
                 attributionControl: d.attributionControl,
                 worldCopyJump: d.worldCopyJump,
                 crs: d.crs,
-                trackResize:d.trackResize
+                trackResize:d.trackResize,
+                editable: true
             };
 
             if (isDefined(d.minZoom)) {
@@ -116,6 +117,7 @@ angular.module('ui-leaflet').factory('leafletMapDefaults', function ($q, leaflet
                 newDefaults.keyboard = isDefined(userDefaults.keyboard) ? userDefaults.keyboard : newDefaults.keyboard;
                 newDefaults.dragging = isDefined(userDefaults.dragging) ? userDefaults.dragging : newDefaults.dragging;
                 newDefaults.trackResize = isDefined(userDefaults.trackResize) ? userDefaults.trackResize : newDefaults.trackResize;
+                newDefaults.editable = isDefined(userDefaults.editable) ? userDefaults.editable : false;
 
                 if (isDefined(userDefaults.controls)) {
                     angular.extend(newDefaults.controls, userDefaults.controls);
